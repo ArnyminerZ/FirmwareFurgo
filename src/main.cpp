@@ -7,7 +7,7 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
-#include <Wire.h>
+#include <EEPROM.h>
 
 #include "config.h"
 #include "sensors.h"
@@ -23,6 +23,8 @@
 #define CHARACTERISTIC_MPU_GYRO_CAL_TRI_UUID   "12345678-9012-3456-7890-1234567890C2" // Calibration trigger
 #define CHARACTERISTIC_MPU_GYRO_CAL_PRO_UUID   "12345678-9012-3456-7890-1234567890C3" // Calibration progress
 #define CHARACTERISTIC_MPU_GYRO_OFFSET_UUID   "12345678-9012-3456-7890-1234567890C4"  // Calibration offsets
+
+#define EEPROM_SIZE 1 // bytes
 
 AccelConfig accelConfig = S8G;
 GyroConfig gyroConfig = S500;
@@ -86,10 +88,10 @@ void setup() {
   Serial.println("Starting BLE work!");
 
 
-  Serial.print("Booting MPU... ");
-  if (initialize_mpu()) {
-    configure_mpu(accelConfig, mpuConfigAccelCharacteristic, gyroConfig, mpuConfigGyroCharacteristic);
-  }
+  // initialize EEPROM with predefined size
+  Serial.print("Starting EEPROM...");
+  // EEPROM.begin(EEPROM_SIZE);
+  Serial.println("OK");
 
 
   BLEDevice::init("FURGO");
@@ -144,7 +146,6 @@ void setup() {
   // MPU Configuration Service
   //
   BLEService *mpuService = server->createService(SERVICE_MPU_UUID);
-  float *mpu_offsets = calibration_mpu();
 
   // Accel Config Characteristic
   mpuConfigAccelCharacteristic = mpuService->createCharacteristic(
@@ -188,8 +189,6 @@ void setup() {
     CHARACTERISTIC_MPU_GYRO_OFFSET_UUID,
     BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
   );
-  gyroOffsetCharacteristic->setValue((uint8_t*)mpu_offsets, sizeof(mpu_offsets));
-  gyroOffsetCharacteristic->notify();
 
   mpuService->start();
 
@@ -202,6 +201,12 @@ void setup() {
   advertising->start();
 
   Serial.println("BLE device started, advertising...");
+
+
+  Serial.print("Booting MPU... ");
+  if (initialize_mpu()) {
+    configure_mpu(accelConfig, mpuConfigAccelCharacteristic, gyroConfig, mpuConfigGyroCharacteristic);
+  }
 }
 
 void loop() {
