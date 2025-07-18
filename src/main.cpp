@@ -7,13 +7,9 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
-#include <EEPROM.h>
-
 #include "config.h"
 #include "sensors.h"
-
-#define SERVICE_UUID        "cead3375-5f7c-41ad-a322-edbdb3079788"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#include "wifi.h"
 
 #define SERVICE_MPU_UUID "12345678-9012-3456-7890-1234567890AB"
 #define CHARACTERISTIC_MPU_ACCEL_CONFIG_UUID "12345678-9012-3456-7890-1234567890B0"
@@ -24,7 +20,15 @@
 #define CHARACTERISTIC_MPU_GYRO_CAL_PRO_UUID   "12345678-9012-3456-7890-1234567890C3" // Calibration progress
 #define CHARACTERISTIC_MPU_GYRO_OFFSET_UUID   "12345678-9012-3456-7890-1234567890C4"  // Calibration offsets
 
-#define EEPROM_SIZE 1 // bytes
+#define SERVICE_WIFI_UUID             "0000AA3F-0000-1000-8000-00805F9B34FB"
+#define CHARACTERISTIC_WIFI_SSID_UUID "0000AA30-0000-1000-8000-00805F9B34FB"
+#define CHARACTERISTIC_WIFI_PASS_UUID "0000AA31-0000-1000-8000-00805F9B34FB"
+#define CHARACTERISTIC_WIFI_CONN_UUID "0000AA32-0000-1000-8000-00805F9B34FB"
+#define CHARACTERISTIC_WIFI_STAT_UUID "0000AA33-0000-1000-8000-00805F9B34FB"
+#define CHARACTERISTIC_WIFI_ADDR_UUID "0000AA34-0000-1000-8000-00805F9B34FB"
+
+#define SSID "Wifi Casa Domotica"
+#define PASSWORD "rgo74amm75amg02rmg07"
 
 AccelConfig accelConfig = S8G;
 GyroConfig gyroConfig = S500;
@@ -38,6 +42,12 @@ BLECharacteristic *gyroOffsetCharacteristic;
 
 BLECharacteristic *mpuConfigAccelCharacteristic;
 BLECharacteristic *mpuConfigGyroCharacteristic;
+
+BLECharacteristic* wifiSsidChar;
+BLECharacteristic* wifiPassChar;
+BLECharacteristic* wifiConnectChar;
+BLECharacteristic* wifiStatusChar;
+BLECharacteristic* wifiAddressChar;
 
 class AccelConfigCallback : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pCharacteristic) override {
@@ -83,15 +93,20 @@ class CalibTriggerCallback : public BLECharacteristicCallbacks {
   }
 };
 
+class WifiConnectCallback : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic* pCharacteristic) override {
+    std::string value = pCharacteristic->getValue();
+    if (!value.empty() && value[0] == 1) {
+      std::string ssid = wifiSsidChar->getValue();
+      std::string pass = wifiPassChar->getValue();
+      connectToWifi(ssid.c_str(), pass.c_str(), wifiStatusChar, wifiAddressChar);
+    }
+  }
+};
+
 void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE work!");
-
-
-  // initialize EEPROM with predefined size
-  Serial.print("Starting EEPROM...");
-  // EEPROM.begin(EEPROM_SIZE);
-  Serial.println("OK");
 
 
   BLEDevice::init("FURGO");
@@ -193,11 +208,46 @@ void setup() {
   mpuService->start();
 
 
+  //
+  // WIFI Configuration Service
+  //
+  BLEService *wifiService = server->createService("0000AA3F-0000-1000-8000-00805F9B34FB");
+  wifiSsidChar = wifiService->createCharacteristic(
+    CHARACTERISTIC_WIFI_SSID_UUID,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE
+  );
+  wifiSsidChar->setValue(SSID);
+  wifiPassChar = wifiService->createCharacteristic(
+    CHARACTERISTIC_WIFI_PASS_UUID,
+    BLECharacteristic::PROPERTY_WRITE
+  );
+  wifiPassChar->setValue(PASSWORD);
+  wifiConnectChar = wifiService->createCharacteristic(
+    CHARACTERISTIC_WIFI_CONN_UUID,
+    BLECharacteristic::PROPERTY_WRITE
+  );
+  wifiConnectChar->setCallbacks(new WifiConnectCallback());
+  wifiStatusChar = wifiService->createCharacteristic(
+    CHARACTERISTIC_WIFI_STAT_UUID,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+  );
+  wifiStatusChar->addDescriptor(new BLE2902());
+  wifiAddressChar = wifiService->createCharacteristic(
+    CHARACTERISTIC_WIFI_ADDR_UUID,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+  );
+  wifiAddressChar->addDescriptor(new BLE2902());
+  wifiAddressChar->setValue("");
+
+  wifiService->start();
+
+
   // Start advertising
   BLEAdvertising *advertising = server->getAdvertising();
   advertising->addServiceUUID(envService->getUUID());
   advertising->addServiceUUID(deviceInfoService->getUUID());
   advertising->addServiceUUID(mpuService->getUUID());
+  advertising->addServiceUUID(wifiService->getUUID());
   advertising->start();
 
   Serial.println("BLE device started, advertising...");
@@ -207,6 +257,8 @@ void setup() {
   if (initialize_mpu()) {
     configure_mpu(accelConfig, mpuConfigAccelCharacteristic, gyroConfig, mpuConfigGyroCharacteristic);
   }
+
+  configure_wifi(SSID, PASSWORD, wifiStatusChar, wifiAddressChar);
 }
 
 void loop() {
@@ -218,5 +270,5 @@ void loop() {
     gyroConfig
   );
 
-  delay(500);
+  ota_handle();
 }

@@ -58,7 +58,7 @@ static bool wire_initialized = false;
 static bool offsets_loaded = false;
 
 // Allows storing sensor calibration values
-Preferences prefs;
+// Preferences prefs;
 
 static unsigned long last_mpu_ble_update = 0;
 
@@ -133,7 +133,7 @@ void configure_mpu(
 
 void load_calibration() {
     // do not set to read-only because the ns may not be initialized yet
-    if (!prefs.begin(PREF_MPU_CALIBRATION, false)) {
+    /*if (!prefs.begin(PREF_MPU_CALIBRATION, false)) {
         Serial.println("Could not initialize prefs environment.");
         return;
     }
@@ -142,12 +142,12 @@ void load_calibration() {
         Serial.println("No calibration data entries found in flash.");
         prefs.end();
         return;
-    }
+    }*/
 
-    float gx_offset = prefs.getFloat(PREF_MPU_CAL_OFFSET_GX, NAN);
-    float gy_offset = prefs.getFloat(PREF_MPU_CAL_OFFSET_GY, NAN);
-    float gz_offset = prefs.getFloat(PREF_MPU_CAL_OFFSET_GZ, NAN);
-    prefs.end();
+    float gx_offset = 0.0; // prefs.getFloat(PREF_MPU_CAL_OFFSET_GX, NAN);
+    float gy_offset = 0.0; // prefs.getFloat(PREF_MPU_CAL_OFFSET_GY, NAN);
+    float gz_offset = 0.0; // prefs.getFloat(PREF_MPU_CAL_OFFSET_GZ, NAN);
+    // prefs.end();
 
     if (isnan(gx_offset) || isnan(gy_offset) || isnan(gz_offset)) {
         Serial.println("No calibration data found in flash.");
@@ -215,11 +215,11 @@ void calibrate_gyro(
     mpu_gz_offset = (float)gz_total / samples;
 
     // Save to flash
-    prefs.begin(PREF_MPU_CALIBRATION, false);
+    /*prefs.begin(PREF_MPU_CALIBRATION, false);
     prefs.putFloat(PREF_MPU_CAL_OFFSET_GX, mpu_gx_offset);
     prefs.putFloat(PREF_MPU_CAL_OFFSET_GY, mpu_gy_offset);
     prefs.putFloat(PREF_MPU_CAL_OFFSET_GZ, mpu_gz_offset);
-    prefs.end();
+    prefs.end();*/
 
     float offsets[3] = {mpu_gx_offset, mpu_gy_offset, mpu_gz_offset};
     offsetsCharacteristic->setValue((uint8_t*)offsets, sizeof(offsets));
