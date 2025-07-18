@@ -19,6 +19,7 @@
 #define CHARACTERISTIC_MPU_GYRO_CAL_TRI_UUID   "12345678-9012-3456-7890-1234567890C2" // Calibration trigger
 #define CHARACTERISTIC_MPU_GYRO_CAL_PRO_UUID   "12345678-9012-3456-7890-1234567890C3" // Calibration progress
 #define CHARACTERISTIC_MPU_GYRO_OFFSET_UUID   "12345678-9012-3456-7890-1234567890C4"  // Calibration offsets
+#define CHARACTERISTIC_MPU_PITCH_ROLL_UUID    "12345678-9012-3456-7890-1234567890C5"
 
 #define SERVICE_WIFI_UUID             "0000AA3F-0000-1000-8000-00805F9B34FB"
 #define CHARACTERISTIC_WIFI_SSID_UUID "0000AA30-0000-1000-8000-00805F9B34FB"
@@ -39,6 +40,7 @@ BLECharacteristic *gyroDataCharacteristic;
 BLECharacteristic *gyroCalibTrigCharacteristic;
 BLECharacteristic *gyroCalibProgCharacteristic;
 BLECharacteristic *gyroOffsetCharacteristic;
+BLECharacteristic *pitchRollCharacteristic;
 
 BLECharacteristic *mpuConfigAccelCharacteristic;
 BLECharacteristic *mpuConfigGyroCharacteristic;
@@ -174,6 +176,11 @@ void setup() {
     BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
   );
   accelDataCharacteristic->addDescriptor(new BLE2902());
+  pitchRollCharacteristic = mpuService->createCharacteristic(
+    CHARACTERISTIC_MPU_PITCH_ROLL_UUID,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY
+  );
+  pitchRollCharacteristic->addDescriptor(new BLE2902());
 
   // Gyro Config Characteristic
   mpuConfigGyroCharacteristic = mpuService->createCharacteristic(
@@ -266,6 +273,7 @@ void loop() {
     tempCharacteristic,
     accelDataCharacteristic,
     gyroDataCharacteristic,
+    pitchRollCharacteristic,
     accelConfig,
     gyroConfig
   );

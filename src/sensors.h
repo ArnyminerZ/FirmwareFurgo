@@ -16,6 +16,7 @@ void read_mpu(
     BLECharacteristic* tempCharacteristic,
     BLECharacteristic* accelDataCharacteristic,
     BLECharacteristic* gyroDataCharacteristic,
+    BLECharacteristic* pitchRollCharacteristic,
     AccelConfig accelConfig,
     GyroConfig gyroConfig
 );

@@ -261,6 +261,7 @@ void read_mpu(
     BLECharacteristic* tempCharacteristic,
     BLECharacteristic* accelDataCharacteristic,
     BLECharacteristic* gyroDataCharacteristic,
+    BLECharacteristic* pitchRollCharacteristic,
     AccelConfig accelConfig,
     GyroConfig gyroConfig
 ) {
@@ -337,12 +338,16 @@ void read_mpu(
         // Pack accel and gyro data as x6 8-bit ints (24 bytes total)
         uint8_t accelData[3] = { axf*100.0, ayf*100.0, azf*100.0 };
         uint8_t gyroData[3]  = { gxf*100.0, gyf*100.0, gzf*100.0 };
+        uint8_t pitchRoll[2]  = { mpu_pitch*100.0, mpu_roll*100.0 };
 
         accelDataCharacteristic->setValue(accelData, sizeof(accelData));
         accelDataCharacteristic->notify();
 
         gyroDataCharacteristic->setValue(gyroData, sizeof(gyroData));
         gyroDataCharacteristic->notify();
+
+        pitchRollCharacteristic->setValue(pitchRoll, sizeof(pitchRoll));
+        pitchRollCharacteristic->notify();
 
         last_mpu_ble_update = millis();
     }
