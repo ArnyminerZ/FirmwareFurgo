@@ -4,8 +4,6 @@
 
 #include <BLECharacteristic.h>
 
-#include <Preferences.h>
-
 #include "config.h"
 #include "sensors.h"
 

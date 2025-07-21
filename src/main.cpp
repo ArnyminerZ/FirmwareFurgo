@@ -8,6 +8,7 @@
 #include <BLE2902.h>
 
 #include "config.h"
+#include "control.h"
 #include "sensors.h"
 #include "wifi.h"
 
@@ -16,10 +17,10 @@
 #define CHARACTERISTIC_MPU_ACCEL_DATA_UUID   "12345678-9012-3456-7890-1234567890B1"
 #define CHARACTERISTIC_MPU_GYRO_CONFIG_UUID  "12345678-9012-3456-7890-1234567890C0"
 #define CHARACTERISTIC_MPU_GYRO_DATA_UUID    "12345678-9012-3456-7890-1234567890C1"
-#define CHARACTERISTIC_MPU_GYRO_CAL_TRI_UUID   "12345678-9012-3456-7890-1234567890C2" // Calibration trigger
-#define CHARACTERISTIC_MPU_GYRO_CAL_PRO_UUID   "12345678-9012-3456-7890-1234567890C3" // Calibration progress
-#define CHARACTERISTIC_MPU_GYRO_OFFSET_UUID   "12345678-9012-3456-7890-1234567890C4"  // Calibration offsets
-#define CHARACTERISTIC_MPU_PITCH_ROLL_UUID    "12345678-9012-3456-7890-1234567890C5"
+#define CHARACTERISTIC_MPU_GYRO_CAL_TRI_UUID "12345678-9012-3456-7890-1234567890C2" // Calibration trigger
+#define CHARACTERISTIC_MPU_GYRO_CAL_PRO_UUID "12345678-9012-3456-7890-1234567890C3" // Calibration progress
+#define CHARACTERISTIC_MPU_GYRO_OFFSET_UUID  "12345678-9012-3456-7890-1234567890C4" // Calibration offsets
+#define CHARACTERISTIC_MPU_PITCH_ROLL_UUID   "12345678-9012-3456-7890-1234567890C5"
 
 #define SERVICE_WIFI_UUID             "0000AA3F-0000-1000-8000-00805F9B34FB"
 #define CHARACTERISTIC_WIFI_SSID_UUID "0000AA30-0000-1000-8000-00805F9B34FB"
@@ -27,6 +28,9 @@
 #define CHARACTERISTIC_WIFI_CONN_UUID "0000AA32-0000-1000-8000-00805F9B34FB"
 #define CHARACTERISTIC_WIFI_STAT_UUID "0000AA33-0000-1000-8000-00805F9B34FB"
 #define CHARACTERISTIC_WIFI_ADDR_UUID "0000AA34-0000-1000-8000-00805F9B34FB"
+
+#define SERVICE_CONTROL_UUID "12345678-9012-3456-7890-1234567890D0"
+#define CHARACTERISTIC_CTRL_OUTPUT "12345678-9012-3456-7890-1234567890D1"
 
 #define SSID "Wifi Casa Domotica"
 #define PASSWORD "rgo74amm75amg02rmg07"
@@ -44,6 +48,8 @@ BLECharacteristic *pitchRollCharacteristic;
 
 BLECharacteristic *mpuConfigAccelCharacteristic;
 BLECharacteristic *mpuConfigGyroCharacteristic;
+
+BLECharacteristic *controlOutputsCharacteristic;
 
 BLECharacteristic* wifiSsidChar;
 BLECharacteristic* wifiPassChar;
@@ -91,6 +97,20 @@ class CalibTriggerCallback : public BLECharacteristicCallbacks {
     if (!value.empty() && value[0] == 1) {
       Serial.println("Starting MPU calibration...");
       calibrate_gyro(gyroCalibProgCharacteristic, gyroOffsetCharacteristic);
+    }
+  }
+};
+
+class ControlCallback : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic* pCharacteristic) override {
+    std::string value = pCharacteristic->getValue();
+    if (!value.empty() && value.length() >= 2) {
+      uint8_t bits1 = value[0];
+      uint8_t bits2 = value[1];
+      uint16_t bits = static_cast<unsigned>(bits1) << 8 | static_cast<unsigned>(bits2);
+    } else {
+      Serial.print("Received an invalid value for control: ");
+      Serial.println(value.c_str());
     }
   }
 };
@@ -216,6 +236,21 @@ void setup() {
 
 
   //
+  // Control Service
+  //
+  BLEService *controlService = server->createService(SERVICE_CONTROL_UUID);
+
+  // Accel Config Characteristic
+  controlOutputsCharacteristic = controlService->createCharacteristic(
+    CHARACTERISTIC_CTRL_OUTPUT,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE
+  );
+  controlOutputsCharacteristic->setCallbacks(new ControlCallback());
+
+  controlService->start();
+
+
+  //
   // WIFI Configuration Service
   //
   BLEService *wifiService = server->createService("0000AA3F-0000-1000-8000-00805F9B34FB");
@@ -266,6 +301,11 @@ void setup() {
   }
 
   configure_wifi(SSID, PASSWORD, wifiStatusChar, wifiAddressChar);
+
+
+  Serial.print("Booting control outputs...");
+  initialize_control(controlOutputsCharacteristic);
+  Serial.println("ok");
 }
 
 void loop() {
