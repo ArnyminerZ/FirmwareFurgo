@@ -101,7 +101,7 @@ class WifiConnectCallback : public BLECharacteristicCallbacks {
     if (!value.empty() && value[0] == 1) {
       std::string ssid = wifiSsidChar->getValue();
       std::string pass = wifiPassChar->getValue();
-      connectToWifi(ssid.c_str(), pass.c_str(), wifiStatusChar, wifiAddressChar);
+      connectToWifi(ssid.c_str(), pass.c_str());
     }
   }
 };
@@ -278,5 +278,5 @@ void loop() {
     gyroConfig
   );
 
-  ota_handle();
+  wifi_loop();
 }

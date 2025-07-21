@@ -7,12 +7,22 @@
 
 #include <BLECharacteristic.h>
 
-void connectToWifi(const char* ssid, const char* password, BLECharacteristic* statusChar, BLECharacteristic* addrChar) {
+#define CONNECTION_CHECK_MILLIS 500
+#define CONNECTION_TIMEOUT 10000
+
+bool isConnecting = false;
+unsigned long connectionAttemptStart = 0;
+unsigned long connectionLastCheck = 0;
+
+BLECharacteristic* _statusChar;
+BLECharacteristic* _addrChar;
+
+void connectToWifi(const char* ssid, const char* password) {
     Serial.printf("Connecting to WiFi SSID: %s\n", ssid);
 
     uint8_t status = 1; // Connecting
-    statusChar->setValue(&status, 1);
-    statusChar->notify();
+    _statusChar->setValue(&status, 1);
+    _statusChar->notify();
 
     WiFi.disconnect(true); // Clear previous
 
@@ -20,23 +30,9 @@ void connectToWifi(const char* ssid, const char* password, BLECharacteristic* st
     Serial.println(ssid);
     WiFi.begin(ssid, password);
 
-    unsigned long start = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - start < 10000) { // timeout of 10 seconds
-        delay(500);
-    }
-
-    status = (WiFi.status() == WL_CONNECTED) ? 2 : 3;
-    statusChar->setValue(&status, 1);
-    statusChar->notify();
-
-    if (status == 2) {
-        Serial.print("WiFi connected. IP: ");
-        Serial.println(WiFi.localIP());
-        addrChar->setValue(WiFi.localIP().toString().c_str());
-        addrChar->notify();
-    } else {
-        Serial.println("WiFi connection failed.");
-    }
+    isConnecting = true;
+    connectionAttemptStart = millis();
+    connectionLastCheck = millis();
 }
 
 void configure_wifi(const char* ssid, const char* password, BLECharacteristic* statusChar, BLECharacteristic* addrChar) {
@@ -44,7 +40,10 @@ void configure_wifi(const char* ssid, const char* password, BLECharacteristic* s
     WiFi.mode(WIFI_STA);
     Serial.println("ok");
 
-    connectToWifi(ssid, password, statusChar, addrChar);
+    _statusChar = statusChar;
+    _addrChar = addrChar;
+
+    connectToWifi(ssid, password);
 
     Serial.print("Connected to: ");
     Serial.println(ssid);
@@ -82,6 +81,35 @@ void configure_wifi(const char* ssid, const char* password, BLECharacteristic* s
     Serial.println("ok");
 }
 
-void ota_handle() {
+void wifi_loop() {
     ArduinoOTA.handle();
+
+    if (isConnecting){
+        if (millis() - connectionLastCheck > CONNECTION_CHECK_MILLIS)
+        {
+            if (WiFi.status() == WL_CONNECTED || millis() - connectionAttemptStart > CONNECTION_TIMEOUT)
+            {
+                // Connection succeed or timeout
+                uint8_t status = (WiFi.status() == WL_CONNECTED) ? 2 : 3;
+                _statusChar->setValue(&status, 1);
+                _statusChar->notify();
+
+                if (status == 2) {
+                    Serial.print("WiFi connected. IP: ");
+                    Serial.println(WiFi.localIP());
+                    _addrChar->setValue(WiFi.localIP().toString().c_str());
+                    _addrChar->notify();
+                } else {
+                    Serial.println("WiFi connection failed.");
+                }
+                isConnecting = false;
+            } else {
+                // Still not connected
+                Serial.println("Connecting...");
+            }
+
+            connectionLastCheck = millis();
+        }
+    }
+    
 }
