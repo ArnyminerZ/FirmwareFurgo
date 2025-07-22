@@ -38,6 +38,9 @@
 AccelConfig accelConfig = S8G;
 GyroConfig gyroConfig = S500;
 
+BLEServer* pServer = nullptr;
+BLEAdvertising* pAdvertising = nullptr;
+
 BLECharacteristic *tempCharacteristic;
 BLECharacteristic *accelDataCharacteristic;
 BLECharacteristic *gyroDataCharacteristic;
@@ -56,6 +59,18 @@ BLECharacteristic* wifiPassChar;
 BLECharacteristic* wifiConnectChar;
 BLECharacteristic* wifiStatusChar;
 BLECharacteristic* wifiAddressChar;
+
+class ServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer* pServer) {
+    Serial.println("Client connected");
+  }
+
+  void onDisconnect(BLEServer* pServer) {
+    Serial.println("Client disconnected, restarting advertising...");
+    delay(100); // optional small delay to avoid issues
+    pAdvertising->start();
+  }
+};
 
 class AccelConfigCallback : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pCharacteristic) override {
@@ -132,12 +147,12 @@ void setup() {
 
 
   BLEDevice::init("FURGO");
-  BLEServer *server = BLEDevice::createServer();
+  pServer = BLEDevice::createServer();
 
   //
   // Environmental Sensing Service
   //
-  BLEService *envService = server->createService(BLEUUID((uint16_t)0x181A));
+  BLEService *envService = pServer->createService(BLEUUID((uint16_t)0x181A));
   
   tempCharacteristic = envService->createCharacteristic(
     BLEUUID((uint16_t)0x2A6E),
@@ -162,7 +177,7 @@ void setup() {
   //
   // Device Information Service
   //
-  BLEService *deviceInfoService = server->createService(BLEUUID((uint16_t)0x180A));
+  BLEService *deviceInfoService = pServer->createService(BLEUUID((uint16_t)0x180A));
 
   BLECharacteristic *manufacturerChar = deviceInfoService->createCharacteristic(
     BLEUUID((uint16_t)0x2A29),
@@ -182,7 +197,7 @@ void setup() {
   //
   // MPU Configuration Service
   //
-  BLEService *mpuService = server->createService(SERVICE_MPU_UUID);
+  BLEService *mpuService = pServer->createService(SERVICE_MPU_UUID);
 
   // Accel Config Characteristic
   mpuConfigAccelCharacteristic = mpuService->createCharacteristic(
@@ -238,7 +253,7 @@ void setup() {
   //
   // Control Service
   //
-  BLEService *controlService = server->createService(SERVICE_CONTROL_UUID);
+  BLEService *controlService = pServer->createService(SERVICE_CONTROL_UUID);
 
   // Accel Config Characteristic
   controlOutputsCharacteristic = controlService->createCharacteristic(
@@ -253,7 +268,7 @@ void setup() {
   //
   // WIFI Configuration Service
   //
-  BLEService *wifiService = server->createService("0000AA3F-0000-1000-8000-00805F9B34FB");
+  BLEService *wifiService = pServer->createService("0000AA3F-0000-1000-8000-00805F9B34FB");
   wifiSsidChar = wifiService->createCharacteristic(
     CHARACTERISTIC_WIFI_SSID_UUID,
     BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE
@@ -285,12 +300,15 @@ void setup() {
 
 
   // Start advertising
-  BLEAdvertising *advertising = server->getAdvertising();
-  advertising->addServiceUUID(envService->getUUID());
-  advertising->addServiceUUID(deviceInfoService->getUUID());
-  advertising->addServiceUUID(mpuService->getUUID());
-  advertising->addServiceUUID(wifiService->getUUID());
-  advertising->start();
+  pAdvertising = pServer->getAdvertising();
+  pAdvertising->addServiceUUID(envService->getUUID());
+  pAdvertising->addServiceUUID(deviceInfoService->getUUID());
+  pAdvertising->addServiceUUID(mpuService->getUUID());
+  pAdvertising->addServiceUUID(wifiService->getUUID());
+  pAdvertising->setScanResponse(false);
+  pAdvertising->setMinPreferred(0x06);
+  pAdvertising->setMinPreferred(0x12);
+  pAdvertising->start();
 
   Serial.println("BLE device started, advertising...");
 
