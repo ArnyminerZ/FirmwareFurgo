@@ -12,6 +12,9 @@
 
 #define MPU6050_ADDR 0x68
 
+// Comment to disable
+// #define DEBUG_SENSOR_VALUES
+
 /**
  * How often to update the BLE characteristic of the MPU values.
  * In milliseconds.
@@ -313,6 +316,7 @@ void read_mpu(
         // Compute pitch and roll from accelerometer
         compute_pitch_roll(axf, ayf, azf, gxf, gyf);
 
+        #ifdef DEBUG_SENSOR_VALUES
         Serial.print("Accel [g]  X: "); Serial.print(axf, 2);
         Serial.print(" Y: "); Serial.print(ayf, 2);
         Serial.print(" Z: "); Serial.println(azf, 2);
@@ -325,6 +329,7 @@ void read_mpu(
         Serial.print("Roll: "); Serial.print(mpu_roll, 2); Serial.println(" °");
 
         Serial.print("Temp: "); Serial.print(temperature, 2); Serial.println(" °C\n");
+        #endif
 
         int16_t temp_c_x100 = (int16_t) (temperature * 100);
         uint8_t tempData[2];
