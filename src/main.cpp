@@ -145,9 +145,12 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE work!");
 
+  delay(1000);
+
 
   BLEDevice::init("FURGO");
   pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new ServerCallbacks());
 
   //
   // Environmental Sensing Service
