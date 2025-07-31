@@ -65,13 +65,17 @@ static void debug(const char* message) {
 }
 
 static void debugf(const char* format, ...) {
+    char buffer[256]; // Adjust size as needed
     va_list args;
     va_start(args, format);
-    Serial.printf(BOLD_BLACK "[DEBU] " BLACK);
-    Serial.printf(format, args);
-    Serial.println(RESET);
+    vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    logMessageWithFormat(DEBUG, format, args);
+
+    Serial.printf(BOLD_BLACK "[DEBU] " BLACK);
+    Serial.printf(buffer);
+    Serial.println(RESET);
+
+    logMessageWithFormat(DEBUG, buffer);
 }
 
 static void info(const char* message) {
@@ -80,13 +84,17 @@ static void info(const char* message) {
 }
 
 static void infof(const char* format, ...) {
+    char buffer[256]; // Adjust size as needed
     va_list args;
     va_start(args, format);
-    Serial.printf(BOLD_BLUE "[INFO] " BLUE);
-    Serial.printf(format, args);
-    Serial.println(RESET);
+    vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    logMessageWithFormat(INFO, format, args);
+
+    Serial.printf(BOLD_BLUE "[INFO] " BLUE);
+    Serial.printf(buffer);
+    Serial.println(RESET);
+
+    logMessageWithFormat(INFO, buffer);
 }
 
 static void warning(const char* message) {
@@ -100,13 +108,17 @@ static void success(const char* message) {
 }
 
 static void successf(const char* format, ...) {
+    char buffer[256]; // Adjust size as needed
     va_list args;
     va_start(args, format);
-    Serial.printf(GREEN "[SUCC] " GREEN);
-    Serial.printf(format, args);
-    Serial.println(RESET);
+    vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    logMessageWithFormat(SUCCESS, format, args);
+
+    Serial.printf(GREEN "[SUCC] " GREEN);
+    Serial.printf(buffer);
+    Serial.println(RESET);
+
+    logMessageWithFormat(SUCCESS, buffer);
 }
 
 static void error(const char* message) {
@@ -115,13 +127,17 @@ static void error(const char* message) {
 }
 
 static void errorf(const char* format, ...) {
+    char buffer[256]; // Adjust size as needed
     va_list args;
     va_start(args, format);
-    Serial.printf(BOLD_RED "[ERRO] " RED);
-    Serial.printf(format, args);
-    Serial.println(RESET);
+    vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    logMessageWithFormat(ERROR, format, args);
+
+    Serial.printf(BOLD_RED "[ERRO] " RED);
+    Serial.printf(buffer);
+    Serial.println(RESET);
+
+    logMessageWithFormat(ERROR, buffer);
 }
 
 #endif

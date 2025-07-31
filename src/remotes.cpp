@@ -6,14 +6,14 @@
 #include "debug.h"
 
 // ESP-NOW Receiver MACs
-const uint8_t MAC_RECEIVER_1[] = {0xB8, 0xF8, 0x62, 0xE2, 0xD2, 0xD0};
+// const uint8_t MAC_RECEIVER_1[] = {0xB8, 0xF8, 0x62, 0xE2, 0xD2, 0xD0};
 
-const uint8_t *RECEIVERS_MACS[] = {MAC_RECEIVER_1};
+const uint8_t *RECEIVERS_MACS[] = {};
 const uint8_t RECEIVERS_COUNT = sizeof(RECEIVERS_MACS) / sizeof(uint8_t *);
 
-bool receiversRegistered[RECEIVERS_COUNT] = {false};
-bool receiversPinged[RECEIVERS_COUNT] = {false};
-unsigned long pingSentAt[RECEIVERS_COUNT] = {0};
+bool receiversRegistered[RECEIVERS_COUNT] = {};
+bool receiversPinged[RECEIVERS_COUNT] = {};
+unsigned long pingSentAt[RECEIVERS_COUNT] = {};
 
 #define MSG_REQ_ACK 0x00 // Request acknowledgment
 
