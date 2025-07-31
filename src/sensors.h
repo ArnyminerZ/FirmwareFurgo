@@ -16,24 +16,9 @@ void read_mpu(
     BLECharacteristic* tempCharacteristic,
     BLECharacteristic* accelDataCharacteristic,
     BLECharacteristic* gyroDataCharacteristic,
-    BLECharacteristic* pitchRollCharacteristic,
+    BLECharacteristic* pitchRollYawCharacteristic,
     AccelConfig accelConfig,
     GyroConfig gyroConfig
 );
-
-/**
- * Calibrates the gyroscope by taking `samples` measures, after waiting `wait` ms between measurements.
- */
-void calibrate_gyro(
-    BLECharacteristic* progressCharacteristic,
-    BLECharacteristic* offsetsCharacteristic,
-    int samples = 500,
-    int wait = 2
-);
-
-/**
- * Fetches the calibration values of the MPU.
- */
-float* calibration_mpu();
 
 #endif

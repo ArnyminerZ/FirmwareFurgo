@@ -7,6 +7,8 @@
 
 #include <BLECharacteristic.h>
 
+#include "debug.h"
+
 #define CONNECTION_CHECK_MILLIS 500
 #define CONNECTION_TIMEOUT 10000
 
@@ -18,7 +20,7 @@ BLECharacteristic* _statusChar;
 BLECharacteristic* _addrChar;
 
 void connectToWifi(const char* ssid, const char* password) {
-    Serial.printf("Connecting to WiFi SSID: %s\n", ssid);
+    debugf("Connecting to WiFi SSID: %s\n", ssid);
 
     uint8_t status = 1; // Connecting
     _statusChar->setValue(&status, 1);
@@ -26,8 +28,6 @@ void connectToWifi(const char* ssid, const char* password) {
 
     WiFi.disconnect(true); // Clear previous
 
-    Serial.print("Connecting to WiFi. SSID: ");
-    Serial.println(ssid);
     WiFi.begin(ssid, password);
 
     isConnecting = true;
@@ -36,21 +36,18 @@ void connectToWifi(const char* ssid, const char* password) {
 }
 
 void configure_wifi(const char* ssid, const char* password, BLECharacteristic* statusChar, BLECharacteristic* addrChar) {
-    Serial.print("Initializing WiFi...");
+    info("Initializing WiFi...");
     WiFi.mode(WIFI_STA);
-    Serial.println("ok");
 
     _statusChar = statusChar;
     _addrChar = addrChar;
 
     connectToWifi(ssid, password);
 
-    Serial.print("Connected to: ");
-    Serial.println(ssid);
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
+    infof("Connected to: %s", ssid);
+    infof("IP Address: %s", WiFi.localIP().toString().c_str());
 
-    Serial.print("Preparing OTA...");
+    info("Preparing OTA...");
     ArduinoOTA
         .onStart([]() {
             String type;
@@ -60,25 +57,25 @@ void configure_wifi(const char* ssid, const char* password, BLECharacteristic* s
                 type = "filesystem";
 
             // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-            Serial.println("Start updating " + type);
+            infof("Start updating %s", type.c_str());
         })
         .onEnd([]() {
-            Serial.println("\nEnd");
+            info("End");
         })
         .onProgress([](unsigned int progress, unsigned int total) {
-            Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+            debugf("Progress: %u%%\r", (progress / (total / 100)));
         })
         .onError([](ota_error_t error) {
-            Serial.printf("Error[%u]: ", error);
-            if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-            else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-            else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-            else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-            else if (error == OTA_END_ERROR) Serial.println("End Failed");
+            errorf("Error[%u]: ", error);
+            if (error == OTA_AUTH_ERROR) errorf("Auth Failed");
+            else if (error == OTA_BEGIN_ERROR) errorf("Begin Failed");
+            else if (error == OTA_CONNECT_ERROR) errorf("Connect Failed");
+            else if (error == OTA_RECEIVE_ERROR) errorf("Receive Failed");
+            else if (error == OTA_END_ERROR) errorf("End Failed");
         });
 
     ArduinoOTA.begin();
-    Serial.println("ok");
+    info("OTA ready");
 }
 
 void wifi_loop() {
@@ -95,17 +92,16 @@ void wifi_loop() {
                 _statusChar->notify();
 
                 if (status == 2) {
-                    Serial.print("WiFi connected. IP: ");
-                    Serial.println(WiFi.localIP());
+                    infof("WiFi connected. IP: %s", WiFi.localIP().toString().c_str());
                     _addrChar->setValue(WiFi.localIP().toString().c_str());
                     _addrChar->notify();
                 } else {
-                    Serial.println("WiFi connection failed.");
+                    error("WiFi connection failed.");
                 }
                 isConnecting = false;
             } else {
                 // Still not connected
-                Serial.println("Connecting...");
+                debug("Connecting...");
             }
 
             connectionLastCheck = millis();
