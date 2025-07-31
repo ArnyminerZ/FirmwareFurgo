@@ -109,6 +109,7 @@ class ControlCallback : public BLECharacteristicCallbacks {
       uint8_t bits1 = value[0];
       uint8_t bits2 = value[1];
       uint16_t bits = static_cast<unsigned>(bits1) << 8 | static_cast<unsigned>(bits2);
+      bit_control(bits);
     } else {
       errorf("Received invalid control value: %s", value.c_str());
     }

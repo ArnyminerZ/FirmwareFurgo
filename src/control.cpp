@@ -2,6 +2,8 @@
 
 #include <BLECharacteristic.h>
 
+#include "debug.h"
+
 #define CONTROL_0 47
 #define CONTROL_1 48
 #define CONTROL_2 45
@@ -39,7 +41,11 @@ void initialize_control(BLECharacteristic *controlOutputsCharacteristic) {
 }
 
 void bit_control(uint16_t bits) {
+    infof("Setting control bits: 0x%04X", bits);
     for (int i = 0; i < 16; i++) {
-        digitalWrite(controlPins[i], (bits >> i) & 0x01);
+        bool isHigh = (bits >> i) & 0x01;
+        debugf("Control pin %d: %s", i, isHigh ? "HIGH" : "LOW");
+        // Set the pin state based on the bit value
+        digitalWrite(controlPins[i], isHigh ? HIGH : LOW);
     }
 }
