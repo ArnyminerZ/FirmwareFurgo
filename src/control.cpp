@@ -21,7 +21,9 @@
 #define CONTROL_E 11
 #define CONTROL_F 10
 
-const uint8_t controlPins[16] = {
+#define PINS_COUNT 16
+
+const uint8_t controlPins[PINS_COUNT] = {
   CONTROL_0, CONTROL_1, CONTROL_2, CONTROL_3,
   CONTROL_4, CONTROL_5, CONTROL_6, CONTROL_7,
   CONTROL_8, CONTROL_9, CONTROL_A, CONTROL_B,
@@ -29,10 +31,10 @@ const uint8_t controlPins[16] = {
 };
 
 void initialize_control(BLECharacteristic *controlOutputsCharacteristic) {
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < PINS_COUNT; i++) {
         pinMode(controlPins[i], OUTPUT);
     }
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < PINS_COUNT; i++) {
         digitalWrite(controlPins[i], LOW);
     }
 
@@ -42,7 +44,7 @@ void initialize_control(BLECharacteristic *controlOutputsCharacteristic) {
 
 void bit_control(uint16_t bits) {
     infof("Setting control bits: 0x%04X", bits);
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < PINS_COUNT; i++) {
         bool isHigh = (bits >> i) & 0x01;
         debugf("Control pin %d: %s", i, isHigh ? "HIGH" : "LOW");
         // Set the pin state based on the bit value
