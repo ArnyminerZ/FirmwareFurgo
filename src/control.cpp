@@ -3,6 +3,7 @@
 #include <BLECharacteristic.h>
 
 #include "debug.h"
+#include "storage.h"
 
 #define CONTROL_0 47
 #define CONTROL_1 48
@@ -34,12 +35,14 @@ void initialize_control(BLECharacteristic *controlOutputsCharacteristic) {
     for (int i = 0; i < PINS_COUNT; i++) {
         pinMode(controlPins[i], OUTPUT);
     }
+
+    uint16_t controlBits = get_uint16(PREF_CONTROL_BITS);
     for (int i = 0; i < PINS_COUNT; i++) {
-        digitalWrite(controlPins[i], LOW);
+        bool value = (controlBits >> i) & 0x01;
+        digitalWrite(controlPins[i], value ? HIGH : LOW);
     }
 
-    uint16_t value = 0;
-    controlOutputsCharacteristic->setValue((uint8_t*)&value, sizeof(value));
+    controlOutputsCharacteristic->setValue((uint8_t*)&controlBits, sizeof(controlBits));
 }
 
 void bit_control(uint16_t bits) {

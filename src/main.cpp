@@ -12,6 +12,7 @@
 #include "debug.h"
 #include "remotes.h"
 #include "sensors.h"
+#include "storage.h"
 #include "wifi.h"
 
 #define SERVICE_MPU_UUID "12345678-9012-3456-7890-1234567890AB"
@@ -110,6 +111,7 @@ class ControlCallback : public BLECharacteristicCallbacks {
       uint8_t bits2 = value[1];
       uint16_t bits = static_cast<unsigned>(bits1) << 8 | static_cast<unsigned>(bits2);
       bit_control(bits);
+      set_uint16(PREF_CONTROL_BITS, bits);
     } else {
       errorf("Received invalid control value: %s", value.c_str());
     }
@@ -132,10 +134,12 @@ void setup() {
   while (!Serial) {
     delay(10); // wait for serial port to connect
   }
-  info("Starting BLE work!");
+
+  initialize_storage();
 
   delay(1000);
 
+  info("Starting BLE work!");
 
   BLEDevice::init("FURGO");
   pServer = BLEDevice::createServer();
@@ -236,6 +240,8 @@ void setup() {
     BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE
   );
   controlOutputsCharacteristic->setCallbacks(new ControlCallback());
+  uint16_t controlBits = get_uint16(PREF_CONTROL_BITS);
+  controlOutputsCharacteristic->setValue((uint8_t*)&controlBits, sizeof(controlBits));
 
   controlService->start();
 
@@ -288,6 +294,10 @@ void setup() {
   info("BLE device started, advertising...");
 
 
+  info("Booting control outputs...");
+  initialize_control(controlOutputsCharacteristic);
+
+
   info("Booting MPU... ");
   if (initialize_mpu()) {
     configure_mpu(accelConfig, mpuConfigAccelCharacteristic, gyroConfig, mpuConfigGyroCharacteristic);
@@ -296,9 +306,6 @@ void setup() {
   configure_wifi(SSID, PASSWORD, wifiStatusChar, wifiAddressChar);
 
   configure_espnow();
-
-  info("Booting control outputs...");
-  initialize_control(controlOutputsCharacteristic);
 }
 
 void loop() {
